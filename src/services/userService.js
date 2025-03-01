@@ -17,16 +17,29 @@ class UserService {
         throw new Error('User not found');
       }
       
-      const query = `
-        UPDATE users 
-        SET 
-          balance = balance + :amount,
-          "updatedAt" = NOW() 
-        WHERE 
-          id = :userId 
-          AND balance + :amount >= 0
-        RETURNING id, balance
-      `;
+      let query;
+      
+      if (amount >= 0) {
+        query = `
+          UPDATE users 
+          SET 
+            balance = balance + :amount,
+            "updatedAt" = NOW() 
+          WHERE id = :userId
+          RETURNING id, balance
+        `;
+      } else {
+        query = `
+          UPDATE users 
+          SET 
+            balance = balance + :amount,
+            "updatedAt" = NOW() 
+          WHERE 
+            id = :userId 
+            AND balance + :amount >= 0
+          RETURNING id, balance
+        `;
+      }
       
       const [results] = await sequelize.query(query, {
         replacements: { 
@@ -36,7 +49,7 @@ class UserService {
         type: sequelize.QueryTypes.UPDATE
       });
       
-      if (!results || results.length === 0) {
+      if ((!results || results.length === 0) && amount < 0) {
         throw new InsufficientFundsError();
       }
       
@@ -49,7 +62,7 @@ class UserService {
         throw error;
       }
       console.error('Error updating balance:', error);
-      throw new Error('Failed to update balance');
+      throw error;
     }
   }
 }

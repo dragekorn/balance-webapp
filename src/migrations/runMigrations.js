@@ -11,7 +11,13 @@ const umzug = new Umzug({
   migrations: {
     path: path.join(__dirname),
     pattern: /^\d+[\w-]+\.js$/,
-    customResolver: (path) => require(path)
+    params: [
+      sequelize.getQueryInterface(),
+      sequelize.constructor,
+      function() {
+        throw new Error('Migration tried to use old style "done" callback. Please upgrade to "umzug" and return a promise instead.');
+      }
+    ]
   }
 });
 
